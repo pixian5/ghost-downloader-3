@@ -1,5 +1,5 @@
 import sys
-from os.path import dirname, basename
+from os.path import basename
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl, QTimer, QEasingCurve, QPropertyAnimation, QRect, QFileInfo, QObject, \
@@ -11,7 +11,7 @@ from qfluentwidgets.common.screen import getCurrentScreenGeometry
 from qframelesswindow import WindowEffect
 
 from app.common.methods import isGreaterEqualWin10
-from app.common.methods import openFile, bringWindowToTop, isAbleToShowToast
+from app.common.methods import openFile, openFolder, bringWindowToTop, isAbleToShowToast
 from app.common.signal_bus import signalBus
 from app.view.Ui_PopUpWindow import Ui_PopUpWindow
 
@@ -287,7 +287,7 @@ class FinishedPopUpWindow(PopUpWindowBase):
         self.contentLabel.fontMetrics().elidedText(_, Qt.TextElideMode.ElideRight, 261)
         
         self.openFileBtn.clicked.connect(lambda: openFile(fileResolvePath))
-        self.openPathBtn.clicked.connect(lambda: openFile(dirname(fileResolvePath)))
+        self.openPathBtn.clicked.connect(lambda: openFolder(fileResolvePath))
 
     @classmethod
     def showPopUpWindow(cls, fileResolvePath:str, mainWindow=None):
@@ -297,7 +297,7 @@ class FinishedPopUpWindow(PopUpWindowBase):
                                    mode=Qt.TransformationMode.SmoothTransformation).save(iconTempFile, "PNG")
 
             buttons = [Button(cls.tr('打开文件'), lambda: openFile(fileResolvePath)),
-                       Button(cls.tr('打开目录'), lambda: openFile(dirname(fileResolvePath)))]
+                       Button(cls.tr('打开目录'), lambda: openFolder(fileResolvePath))]
 
             LimitedRunTimer.create(desktopNotifier.get_current_notifications)
 

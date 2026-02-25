@@ -210,7 +210,10 @@ def openFile(fileResolve):
 
     :param fileResolve: 文件路径
     """
-    QDesktopServices.openUrl(QUrl.fromLocalFile(fileResolve))
+    if sys.platform == "win32":
+        os.startfile(fileResolve)
+    else:
+        QDesktopServices.openUrl(QUrl.fromLocalFile(fileResolve))
 
 
 def openFolder(path):
