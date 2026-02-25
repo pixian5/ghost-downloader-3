@@ -1,6 +1,10 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -13,6 +17,8 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
     runs-on: windows-2022
+    env:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -40,12 +46,14 @@ jobs:
 
       - name: upload-unsigned-artifact
         id: upload-unsigned-artifact
+        if: env.SIGNPATH_API_TOKEN != ''
         uses: actions/upload-artifact@v4
         with:
           name: Ghost-Downloader-v${{ env.VERSION }}-Windows-${{ matrix.architecture }}-Unsigned
           path: dist/Ghost-Downloader-3-Unsigned.dist
 
       - name: Sign
+        if: env.SIGNPATH_API_TOKEN != ''
         uses: signpath/github-action-submit-signing-request@v1.1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
@@ -55,6 +63,12 @@ jobs:
           github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
           wait-for-completion: true
           output-artifact-directory: 'dist/Ghost-Downloader-3.dist'
+
+      - name: Use unsigned dist when signing is skipped
+        if: env.SIGNPATH_API_TOKEN == ''
+        shell: pwsh
+        run: |
+          mv dist/Ghost-Downloader-3-Unsigned.dist dist/Ghost-Downloader-3.dist
 
       - name: Download Inno Setup Translation Files
         run: |
@@ -81,8 +95,9 @@ jobs:
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: v${{ env.VERSION }}
+          prerelease: ${{ github.event_name != 'release' }}
           files: |
             Ghost-Downloader-v${{ env.VERSION }}-Windows-${{ matrix.architecture }}.zip
             dist/Ghost-Downloader-v${{ env.VERSION }}-Windows-${{ matrix.architecture }}-Setup.exe
@@ -140,8 +155,9 @@ jobs:
           
       - name: Upload to release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: v${{ env.VERSION }}
+          prerelease: ${{ github.event_name != 'release' }}
           files: Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}.dmg
 
   build-macos-14-x86_64:
@@ -192,8 +208,9 @@ jobs:
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: v${{ env.VERSION }}
+          prerelease: ${{ github.event_name != 'release' }}
           files: Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}.dmg
 
   build-ubuntu:
@@ -238,6 +255,7 @@ jobs:
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: v${{ env.VERSION }}
+          prerelease: ${{ github.event_name != 'release' }}
           files: Ghost-Downloader-v${{ env.VERSION }}-Linux-${{ matrix.architecture }}.tar.xz
