@@ -28,10 +28,8 @@ jobs:
 
       - name: Build with Nuitka
         run: |
-          python3 -c "import sys; sys.path.append('./app/common'); import config; print(config.VERSION)" > version.txt
-          version=$(sed -n '4p' version.txt)
+          version=$(grep '^VERSION = ' app/common/config.py | cut -d'"' -f2)
           echo "VERSION=${version}" >> "$GITHUB_ENV"
-          rm -rf version.txt
           python deploy.py
 
       - name: Upload artifacts
