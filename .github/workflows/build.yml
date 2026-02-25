@@ -97,7 +97,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          prerelease: ${{ github.event_name != 'release' }}
+          prerelease: false
           files: |
             Ghost-Downloader-v${{ env.VERSION }}-Windows-${{ matrix.architecture }}.zip
             dist/Ghost-Downloader-v${{ env.VERSION }}-Windows-${{ matrix.architecture }}-Setup.exe
@@ -157,7 +157,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          prerelease: ${{ github.event_name != 'release' }}
+          prerelease: false
           files: Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}.dmg
 
   build-macos-14-x86_64:
@@ -210,7 +210,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          prerelease: ${{ github.event_name != 'release' }}
+          prerelease: false
           files: Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}.dmg
 
   build-ubuntu:
@@ -257,5 +257,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          prerelease: ${{ github.event_name != 'release' }}
+          prerelease: false
           files: Ghost-Downloader-v${{ env.VERSION }}-Linux-${{ matrix.architecture }}.tar.xz
