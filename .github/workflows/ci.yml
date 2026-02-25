@@ -1,0 +1,142 @@
+name: CI Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --timeout=300 -r requirements.txt
+
+      - name: Build with Nuitka
+        run: |
+          python -c "from app.common.config import VERSION; f = open('version.txt', 'w'); f.write(VERSION); f.close();"
+          $VERSION = gc version.txt
+          Write-Host "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          del version.txt
+          python deploy.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ghost-Downloader-v${{ env.VERSION }}-Windows-${{ matrix.architecture }}
+          path: dist/Ghost-Downloader-3.dist
+
+  build-linux:
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1-mesa
+          pip install --timeout=300 -r requirements.txt
+
+      - name: Build with Nuitka
+        run: |
+          python3 -c "import sys; sys.path.append('./app/common'); import config; print(config.VERSION)" > version.txt
+          version=$(sed -n '4p' version.txt)
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          rm -rf version.txt
+          python deploy.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ghost-Downloader-v${{ env.VERSION }}-Linux-${{ matrix.architecture }}
+          path: dist/Ghost-Downloader-3.dist
+
+  build-macos:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            architecture: arm64
+          - os: macos-13
+            architecture: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Remove problematic brew libs
+        if: matrix.architecture == 'x86_64'
+        run: |
+          brew remove --force --ignore-dependencies openssl@3
+          brew cleanup openssl@3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --timeout=300 -r requirements.txt
+
+      - name: Build with Nuitka
+        run: |
+          python3 -c "import sys; sys.path.append('./app/common'); import config; print(config.VERSION)" > version.txt
+          version=$(sed -n '4p' version.txt)
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          rm -rf version.txt
+          python3 deploy.py
+          chmod +x "dist/Ghost-Downloader-3.app/Contents/MacOS/Ghost-Downloader-3"
+          rm -rf "dist/Ghost-Downloader-3.build"
+          rm -rf "dist/Ghost-Downloader-3.dist"
+          mv "dist/Ghost-Downloader-3.app" "dist/Ghost Downloader.app"
+          mv "resources/修复软件损坏" "dist/修复软件损坏"
+
+      - name: Reinstall openssl libs
+        if: matrix.architecture == 'x86_64'
+        run: |
+          brew install openssl@3
+
+      - name: Create DMG
+        run: |
+          ln -s /Applications dist/Applications
+          sleep 1
+          hdiutil create -srcfolder "dist/" -volname "Ghost-Downloader" -fs HFS+ \
+            -fsargs "-c c=64,a=16,e=16" -format UDZO -size 400m \
+            "Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}.dmg"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}
+          path: Ghost-Downloader-v${{ env.VERSION }}-macOS-${{ matrix.architecture }}.dmg
