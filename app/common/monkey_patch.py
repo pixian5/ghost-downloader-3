@@ -6,7 +6,6 @@ def enterEvent(self, e):
 
 def leaveEvent(self, e):
     self._isEnter = False
-    self.timer.stop()
     self.collapse()
 
 ScrollBar.enterEvent = enterEvent
