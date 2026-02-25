@@ -39,7 +39,7 @@ elif sys.platform == "darwin":
         # '--show-progress',
         '--static-libpython=no',
         "--macos-create-app-bundle",
-        "--assume-yes-for-download",
+        "--assume-yes-for-downloads",
         "--macos-app-mode=gui",
         f"--macos-app-version={VERSION}",
         "--macos-app-icon=resources/logo.icns",
